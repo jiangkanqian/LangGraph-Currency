@@ -1,0 +1,33 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test-and-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.13.1'
+          python-version: '3.12'
+      - run: bash scripts/ci.sh
+      - run: docker build -t currency:test .
+      - name: Container discovery smoke
+        run: |
+          docker run -d --name currency-test -p 8080:8080 \
+            -e OPENAI_MODEL=test-model -e OPENAI_API_KEY=test-key \
+            -e KAGENT_URL=http://localhost:8083 -e KAGENT_NAME=currency-test \
+            -e KAGENT_NAMESPACE=kagent currency:test
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/health; then break; fi
+            sleep 2
+          done
+          uv run --locked python scripts/smoke.py --url http://localhost:8080 --discovery-only
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: reports/

@@ -1,0 +1,25 @@
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: currency-dev
+  namespace: kagent
+spec:
+  description: LangGraph currency agent (dev), delivered by Zadig
+  type: BYO
+  byo:
+    deployment:
+      image: registry.example.com/agents/langgraph-currency:replace-with-commit
+      env:
+        - name: OPENAI_MODEL
+          value: replace-with-served-model-name
+        - name: OPENAI_BASE_URL
+          value: http://your-model-service:8000/v1
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: currency-dev-model
+              key: OPENAI_API_KEY
+        - name: OTEL_TRACING_ENABLED
+          value: "false"
+        - name: LANGSMITH_TRACING
+          value: "false"
